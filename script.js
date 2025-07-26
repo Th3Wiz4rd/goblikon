@@ -17,6 +17,7 @@ let nextTurnBtn;
 let prevTurnBtn;
 let currentTurnDisplay;
 let battleMapCanvas;
+let ctx;
 
 document.addEventListener('DOMContentLoaded', () => {
     addCreatureForm = document.getElementById('add-creature-form');
@@ -33,7 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
     nextTurnBtn = document.getElementById('next-turn-btn');
     prevTurnBtn = document.getElementById('prev-turn-btn');
     currentTurnDisplay = document.getElementById('current-turn-display');
-    battleMapCanvas = document.getElementById('battle-map-canvas')
+    battleMapCanvas = document.getElementById('battle-map-canvas');
+    ctx = battleMapCanvas.getContext('2d');
+    resetEncounterBtn = document.getElementById('reset-encounter-btn');
 
     addCreatureForm.addEventListener('submit', handleAddCreature);
     addCreatureBtn.addEventListener('click', handleAddCreature);
@@ -41,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initiativeListContainer.addEventListener('click', handleCombatantInteraction);
     nextTurnBtn.addEventListener('click', handleNextTurn);
     prevTurnBtn.addEventListener('click', handlePreviousTurn);
+    resetEncounterBtn.addEventListener('click', handleResetEncounter);
 
     loadCombatantsFromStorage(); //unsure how i will handle this, if web based itll need to have a cloud storage or maybe make a local version for folks to dl?
     renderPreCombatList();
@@ -323,3 +327,20 @@ function loadCombatantsFromStorage() {
         currentTurnIndex = parseInt(savedTurnIndex);
     }
 }
+
+function handleResetEncounter() {
+    if (!confirm('Are you sure you want to reset the encounter? All current combat data will be lost.')) {
+        return; // User cancelled
+    }
+
+    combatants.length = 0;
+    currentTurnIndex = 0;
+
+    document.getElementById('combat-tracker').style.display = 'none';
+    document.getElementById('visual-map-section').style.display = 'none';
+    document.getElementById('creature-setup').style.display = 'block';
+
+    renderPreCombatList();
+    saveCombatantsToStorage();
+}
+
