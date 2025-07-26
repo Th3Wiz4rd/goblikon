@@ -36,9 +36,11 @@ document.addEventListener('DOMContentLoaded', () => {
     battleMapCanvas = document.getElementById('battle-map-canvas')
 
     addCreatureForm.addEventListener('submit', handleAddCreature);
+    addCreatureBtn.addEventListener('click', handleAddCreature);
+
     initiativeListContainer.addEventListener('click', handleCombatantInteraction);
     nextTurnBtn.addEventListener('click', handleNextTurn);
-    prevTurnBtn.addEventListener('click', handlePrevTurn);
+    prevTurnBtn.addEventListener('click', handlePreviousTurn);
 
     loadCombatantsFromStorage(); //unsure how i will handle this, if web based itll need to have a cloud storage or maybe make a local version for folks to dl?
     renderPreCombatList();
@@ -48,8 +50,8 @@ function handleAddCreature(event) {
     event.preventDefault();
 
     const name = creatureNameInput.value.trim();
-    const maxHp = parseInt(creatureMaxHp.value);
-    const ac = parseInt(creatureAc.value);
+    const maxHp = parseInt(creatureMaxHpInput.value);
+    const ac = parseInt(creatureAcInput.value);
     const initiative = parseInt(creatureInitiativeInput.value);
     const type = creatureTypeSelect.value;
 
