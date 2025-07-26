@@ -1,5 +1,6 @@
 
 const combatants = [];
+const GRID_SIZE = 40;
 let currentTurnIndex = 0;
 
 let addCreatureForm;
@@ -8,16 +9,21 @@ let creatureMaxHpInput;
 let creatureAcInput;   
 let creatureInitiativeInput; 
 let creatureTypeSelect;
-let addCreatureBtn;     
+let addCreatureBtn;
+
 let preCombatList;
 let startCombatBtn;
 let combatTrackerSection; 
 let initiativeListContainer;
 let nextTurnBtn;
 let prevTurnBtn;
+
 let currentTurnDisplay;
 let battleMapCanvas;
 let ctx;
+let isDragging = false;
+let draggedCombatant = null;
+let dragOffsetX, dragOffsetY;
 
 document.addEventListener('DOMContentLoaded', () => {
     addCreatureForm = document.getElementById('add-creature-form');
@@ -26,15 +32,21 @@ document.addEventListener('DOMContentLoaded', () => {
     creatureAcInput = document.getElementById('creature-ac');
     creatureInitiativeInput = document.getElementById('creature-initiative');
     creatureTypeSelect = document.getElementById('creature-type');
-    addCreatureBtn = document.getElementById('add-creature-btn'); 
+    addCreatureBtn = document.getElementById('add-creature-btn');
+
     preCombatList = document.getElementById('pre-combat-list');
     startCombatBtn = document.getElementById('start-combat-btn');
     combatTrackerSection = document.getElementById('combat-tracker'); 
     initiativeListContainer = document.getElementById('initiative-list-container');
     nextTurnBtn = document.getElementById('next-turn-btn');
     prevTurnBtn = document.getElementById('prev-turn-btn');
+
     currentTurnDisplay = document.getElementById('current-turn-display');
     battleMapCanvas = document.getElementById('battle-map-canvas');
+    battleMapCanvas.addEventListener('mousedown', handleMouseDown);
+    battleMapCanvas.addEventListener('mousemove', handleMouseMove);
+    battleMapCanvas.addEventListener('mouseup', handleMouseUp);
+    battleMapCanvas.addEventListener('mouseleave', handleMouseUp);
     ctx = battleMapCanvas.getContext('2d');
     resetEncounterBtn = document.getElementById('reset-encounter-btn');
 
@@ -75,8 +87,8 @@ function handleAddCreature(event) {
         conditions: [],
         isConcentrating: false,
         type: type,
-        x: 0,
-        y: 0,
+        x: combatants.length % 10,
+        y: Math.floor(combatants.length / 10),
         tokenColor: type === 'player' ? '#28a745' : '#dc3545'
     };
     
@@ -354,36 +366,33 @@ function drawBattleMap() {
 
     ctx.clearRect(0, 0, battleMapCanvas.width, battleMapCanvas.height);
 
-    const gridSize = 40;
     const width = battleMapCanvas.width;
     const height = battleMapCanvas.height;
 
     ctx.strokeStyle = '#ccc';
     ctx.lineWidth = 0.5;
 
-    for (let x = 0; x <= width; x += gridSize) {
+    for (let x = 0; x <= width; x += GRID_SIZE) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, height);
         ctx.stroke();
     }
 
-    for (let y = 0; y <= height; y += gridSize) {
+    for (let y = 0; y <= height; y += GRID_SIZE) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(width, y);
         ctx.stroke();
     }
     combatants.forEach((combatant, index) => {
-        const tokenRadius = gridSize / 2 * 0.8;
-        const centerX = combatant.x * gridSize + (gridSize/2);
-        const centerY = combatant.y * gridSize + (gridSize/2);
+        const tokenRadius = (GRID_SIZE / 2) * 0.8;
+        const drawX = combatant.x * GRID_SIZE + (GRID_SIZE / 2);
+        const drawY = combatant.y * GRID_SIZE + (GRID_SIZE / 2);
 
-        const displayX = centerX + (index % 5) * (gridSize /4);
-        const displayY = centerY + Math.floor(index /5) * (gridSize /4);
 
         ctx.beginPath();
-        ctx.arc(displayX, displayY, tokenRadius, 0, Math.PI * 2);
+        ctx.arc(drawX, drawY, tokenRadius, 0, Math.PI * 2);
 
         ctx.fillStyle = combatant.tokenColor;
         ctx.fill();
@@ -397,9 +406,71 @@ function drawBattleMap() {
         ctx.fillStyle = 'white';
         ctx.font = `${tokenRadius * 0.8}px Arial`;
         ctx.textAlign = 'center';
-        ctx.textBaseLine = 'middle';
+        ctx.textBaseline = 'middle';
 
         const tokenText = combatant.name.substring(0,2).toUpperCase();
-        ctx.fillText(tokenText, displayX, displayY);
+        ctx.fillText(tokenText, drawX, drawY);
     });
+}
+
+function handleMouseDown(event) {
+    const rect = battleMapCanvas.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    for (let i = combatants.length - 1; i >= 0; i--) {
+        const combatant = combatants[i];
+        const tokenX = combatant.x * GRID_SIZE + (GRID_SIZE / 2);
+        const tokenY = combatant.y * GRID_SIZE + (GRID_SIZE / 2);
+        const tokenRadius = (GRID_SIZE / 2) * 0.8;
+
+        const distance = Math.sqrt(
+            Math.pow(mouseX - tokenX, 2) + Math.pow(mouseY - tokenY, 2)
+        );
+
+        if (distance < tokenRadius) {
+            isDragging = true;
+            draggedCombatant = combatant;
+
+            dragOffsetX = mouseX - tokenX;
+            dragOffsetY = mouseY - tokenY;
+
+            combatants.splice(i, 1);
+            combatants.push(draggedCombatant);
+
+            drawBattleMap();
+            return;
+        }
+    }
+}
+
+function handleMouseMove(event) {
+    if (isDragging && draggedCombatant) {
+        const rect = battleMapCanvas.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+
+        let newGridX = Math.round((mouseX - dragOffsetX) / GRID_SIZE - 0.5);
+        let newGridY = Math.round((mouseY - dragOffsetY) / GRID_SIZE - 0.5);
+
+        newGridX = Math.max(0, Math.min(newGridX, Math.floor(battleMapCanvas.width / GRID_SIZE) - 1));
+        newGridY = Math.max(0, Math.min(newGridY, Math.floor(battleMapCanvas.height / GRID_SIZE) - 1));
+
+        
+        if (draggedCombatant.x !== newGridX || draggedCombatant.y !== newGridY) {
+            draggedCombatant.x = newGridX;
+            draggedCombatant.y = newGridY;
+            drawBattleMap();
+        }
+    }
+}
+
+function handleMouseUp(event) {
+    if (isDragging) {
+        isDragging = false;
+        draggedCombatant = null;
+        dragOffsetX = 0;
+        dragOffsetY = 0;
+        saveCombatantsToStorage();
+    }
 }
