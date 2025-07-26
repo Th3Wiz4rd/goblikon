@@ -235,6 +235,8 @@ function renderInitiativeList() {
         // Debug took 2 hours..   
         initiativeListContainer.appendChild(combatantDiv);
     });
+
+    drawBattleMap();
 }
 // conditions may have an issue, will need to run tests 
 function handleCombatantInteraction(event) {
@@ -343,4 +345,61 @@ function handleResetEncounter() {
     renderPreCombatList();
     saveCombatantsToStorage();
 }
+// remembering how to draw in code was annoying lol. i hope it dont break. 
+function drawBattleMap() {
+    if (!battleMapCanvas || !ctx) {
+        console.warn("Battle map canvas or context not found");
+        return;
+    }
 
+    ctx.clearRect(0, 0, battleMapCanvas.width, battleMapCanvas.height);
+
+    const gridSize = 40;
+    const width = battleMapCanvas.width;
+    const height = battleMapCanvas.height;
+
+    ctx.strokeStyle = '#ccc';
+    ctx.lineWidth = 0.5;
+
+    for (let x = 0; x <= width; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+    }
+
+    for (let y = 0; y <= height; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+    }
+    combatants.forEach((combatant, index) => {
+        const tokenRadius = gridSize / 2 * 0.8;
+        const centerX = combatant.x * gridSize + (gridSize/2);
+        const centerY = combatant.y * gridSize + (gridSize/2);
+
+        const displayX = centerX + (index % 5) * (gridSize /4);
+        const displayY = centerY + Math.floor(index /5) * (gridSize /4);
+
+        ctx.beginPath();
+        ctx.arc(displayX, displayY, tokenRadius, 0, Math.PI * 2);
+
+        ctx.fillStyle = combatant.tokenColor;
+        ctx.fill();
+
+        if (index === currentTurnIndex) {
+            ctx.strokeStyle = 'yellow';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+        
+        ctx.fillStyle = 'white';
+        ctx.font = `${tokenRadius * 0.8}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseLine = 'middle';
+
+        const tokenText = combatant.name.substring(0,2).toUpperCase();
+        ctx.fillText(tokenText, displayX, displayY);
+    });
+}
