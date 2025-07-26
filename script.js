@@ -4,30 +4,43 @@ let currentTurnIndex = 0;
 
 let addCreatureForm;
 let creatureNameInput;
+let creatureMaxHpInput; 
+let creatureAcInput;   
+let creatureInitiativeInput; 
+let creatureTypeSelect;
+let addCreatureBtn;     
+let preCombatList;
+let startCombatBtn;
+let combatTrackerSection; 
+let initiativeListContainer;
+let nextTurnBtn;
+let prevTurnBtn;
+let currentTurnDisplay;
+let battleMapCanvas;
 
 document.addEventListener('DOMContentLoaded', () => {
-    addCreatureForm = document.querySelector('add-creature-form');
-    creatureNameInput = document.querySelector('creature-name-input');
-    creatureMaxHp = document.querySelector('creature-max-hp');
-    creatureAc = document.querySelector('creature-ac');
-    creatureInitiative = document.querySelector('creature-initiative');
-    creatureTypeSelect = document.querySelector('creature-type')
-    addCreaturBtn = document.querySelector('add-creature-btn');
-    preCombatList = document.querySelector('pre-combat-list');
-    startCombatBtn = document.querySelector('start-combat-btn');
-    combatTrackerSection = document.querySelector('combat-tracker-section');
-    initiativeListContainer = document.querySelector('initiative-list-container');
-    nextTurnBtn = document.querySelector('next-turn-btn');
-    prevTurnBtn = document.querySelector('prev-turn-btn');
-    currentTurnDisplay = document.querySelector('current-turn-display');
-    battleMapCanvas = document.querySelector('battle-man-canvas');
+    addCreatureForm = document.getElementById('add-creature-form');
+    creatureNameInput = document.getElementById('creature-name'); 
+    creatureMaxHpInput = document.getElementById('creature-max-hp');
+    creatureAcInput = document.getElementById('creature-ac');
+    creatureInitiativeInput = document.getElementById('creature-initiative');
+    creatureTypeSelect = document.getElementById('creature-type');
+    addCreatureBtn = document.getElementById('add-creature-btn'); 
+    preCombatList = document.getElementById('pre-combat-list');
+    startCombatBtn = document.getElementById('start-combat-btn');
+    combatTrackerSection = document.getElementById('combat-tracker'); 
+    initiativeListContainer = document.getElementById('initiative-list-container');
+    nextTurnBtn = document.getElementById('next-turn-btn');
+    prevTurnBtn = document.getElementById('prev-turn-btn');
+    currentTurnDisplay = document.getElementById('current-turn-display');
+    battleMapCanvas = document.getElementById('battle-map-canvas')
 
     addCreatureForm.addEventListener('submit', handleAddCreature);
     initiativeListContainer.addEventListener('click', handleCombatantInteraction);
     nextTurnBtn.addEventListener('click', handleNextTurn);
-    prevTurnBtn.addEventListener('click', handlePrecTurn);
+    prevTurnBtn.addEventListener('click', handlePrevTurn);
 
-    loadCombatantFromStorage(); //unsure how i will handle this, if web based itll need to have a cloud storage or maybe make a local version for folks to dl?
+    loadCombatantsFromStorage(); //unsure how i will handle this, if web based itll need to have a cloud storage or maybe make a local version for folks to dl?
     renderPreCombatList();
 });
 
@@ -37,7 +50,7 @@ function handleAddCreature(event) {
     const name = creatureNameInput.value.trim();
     const maxHp = parseInt(creatureMaxHp.value);
     const ac = parseInt(creatureAc.value);
-    const initiative = parseInt(creatureInitiative);
+    const initiative = parseInt(creatureInitiativeInput.value);
     const type = creatureTypeSelect.value;
 
     if (!name || isNaN(maxHp) || maxHp <= 0 || isNaN(initiative)) {
@@ -68,21 +81,23 @@ function handleAddCreature(event) {
 
     addCreatureForm.reset();
     creatureNameInput.focus();
+
+    saveCombatantsToStorage();
 }
 // this should work as intended, but i have some concerns about performance at this point. 
 function renderPreCombatList() {
     preCombatList.innerHTML = '<h4>Creatures in Encounter:</h4>';
 
     if (combatants.length === 0){
-        preCombatList.innerHTML += '<p>No creatures added yet.<p>';
+        preCombatList.innerHTML += '<p>No creatures added yet.</p>';
         return;
     }
 
     const ul = document.createElement('ul');
     combatants.forEach(combatant => {
         const li = document.createElement('li');
-        // something feels wrong with the function below for text content, i just cant figure it out. will need to run a quick test to see whats what. 
-        li.textContent = `${combatant.name} (HP: ${combatant.maxHP}, Init: ${combatant.initiative})`;
+         
+        li.textContent = `${combatant.name} (HP: ${combatant.maxHP}, Init: ${combatant.initiative}, AC: ${combatant.AC})`;
         ul.appendChild(li);
     });
 
@@ -135,10 +150,10 @@ function renderInitiativeList() {
         const damageInput = document.createElement('input');
         damageInput.type = 'number';
         damageInput.value = '1';
-        damangeInput.min = '1';
+        damageInput.min = '1';
         damageInput.classList.add('hp-amount-input');
 
-        const damageBtn = document.createElement('burron');
+        const damageBtn = document.createElement('button');
         damageBtn.textContent = 'Damage'
         damageBtn.dataset.id = combatant.id;
         damageBtn.dataset.action = 'damage';
@@ -146,32 +161,76 @@ function renderInitiativeList() {
         const healBtn = document.createElement('button');
         healBtn.textContent = 'Heal';
         healBtn.dataset.id = combatant.id;
-        healBtn.dataset.action = 'damage';
+        healBtn.dataset.action = 'heal';
 
         hpControls.appendChild(damageInput);
         hpControls.appendChild(damageBtn);
         hpControls.appendChild(healBtn);
 
-        const conditionsEl = document.createElement('div');
-        conditionsEl.classList.add('combatant-conditions');
-        conditionsEl.textContent = `Conditions: ${combatant.conditions.join(', ') || 'None'}`;
+        // this section was annoying....
+        const conditionsContainer = document.createElement('div'); 
+        conditionsContainer.classList.add('combatant-conditions-container');
+        conditionsContainer.dataset.id = combatant.id;
 
         //Condition buttons
+        if (combatant.conditions.length > 0) {
+            combatant.conditions.forEach(condition => {
+                const conditionBadge = document.createElement('span');
+                conditionBadge.classList.add('condition-badge');
+                conditionBadge.dataset.id = combatant.id;
+                conditionBadge.dataset.condition = condition;
+
+                const conditionText = document.createElement('span');
+                conditionText.textContent = condition.charAt(0).toUpperCase() + condition.slice(1);
+
+                const removeBtn = document.createElement('span');
+                removeBtn.classList.add('remove-condition-btn');
+                removeBtn.textContent = 'x';
+                removeBtn.dataset.id = combatant.id;
+                removeBtn.dataset.condition = condition;
+
+                conditionBadge.appendChild(conditionText);
+                conditionBadge.appendChild(removeBtn);
+                conditionsContainer.appendChild(conditionBadge);
+            });
+        } else {
+            const noConditionsText = document.createElement('span');
+            noConditionsText.textContent = 'No Conditions';
+            noConditionsText.style.fontStyle = 'italic';
+            noConditionsText.style.color = '#888';
+            conditionsContainer.appendChild(noConditionsText);
+        }
+
         const addConditionBtn = document.createElement('button');
         addConditionBtn.textContent = 'Add Condition';
         addConditionBtn.dataset.id = combatant.id;
-        addConditionBtn.dataset.action = 'add-condition';
+        addConditionBtn.dataset.action = 'add-condition'; // Make sure this matches the event listener
+
+
+        // toggle
+        const concentrationBtn = document.createElement('button');
+        concentrationBtn.classList.add('toggle-concentration-btn');
+        concentrationBtn.dataset.id = combatant.id;
+        concentrationBtn.dataset.action = 'toggle-concentration'; 
+        concentrationBtn.textContent = `Concentration: ${combatant.isConcentrating ? 'ON' : 'OFF'}`;
+
+        if (combatant.isConcentrating) {
+            concentrationBtn.classList.add('concentration-active');
+        } else {
+            concentrationBtn.classList.add('concentration-inactive');
+        }
 
         combatantDiv.appendChild(nameEl);
         combatantDiv.appendChild(hpEl);
         combatantDiv.appendChild(hpControls);
-        combatantDiv.appendChild(conditionsEl);
+        combatantDiv.appendChild(conditionsContainer);
         combatantDiv.appendChild(addConditionBtn);
-        // this should append properly, maybe an indent error here or there to debug.   
-        initiativeListcontainer.appendChild(combatantDiv);
+        combatantDiv.appendChild(concentrationBtn);
+        // Debug took 2 hours..   
+        initiativeListContainer.appendChild(combatantDiv);
     });
 }
-
+// conditions may have an issue, will need to run tests 
 function handleCombatantInteraction(event) {
     const target = event.target;
     const combatantId = target.dataset.id;
@@ -187,6 +246,7 @@ function handleCombatantInteraction(event) {
         if (!isNaN(amount) && amount > 0) {
             combatant.currentHP = Math.max(0, combatant.currentHP - amount);
             renderInitiativeList();
+            saveCombatantsToStorage();
         }
     } else if (target.matches('button[data-action="heal"]')) {
         const healInput = target.previousElementSibling.previousElementSibling;
@@ -194,15 +254,28 @@ function handleCombatantInteraction(event) {
         if (!isNaN(amount) && amount > 0) {
             combatant.currentHP = Math.min(combatant.maxHP, combatant.currentHP + amount);
             renderInitiativeList();
+            saveCombatantsToStorage();
         }
     } else if (target.matches('button[data-action="add-condition"]')) {
         const newCondition = prompt('Enter condition to add');
-        if (newCondition && !combatant.conditiond.includes(newCondition.trim().toLowerCase())) {
+        if (newCondition && !combatant.conditions.includes(newCondition.trim().toLowerCase())) {
             combatant.conditions.push(newCondition.trim().toLowerCase());
             renderInitiativeList();
+            saveCombatantsToStorage();
         }
-    } // add remove conditions and concentration things here
+    } else if (target.matches('.remove-condition-btn')) { // Targets the 'x' span
+        const conditionToRemove = target.dataset.condition;
+        combatant.conditions = combatant.conditions.filter(cond => cond !== conditionToRemove);
+        renderInitiativeList();
+        saveCombatantsToStorage(); // Save after condition change
+    }
+    else if (target.matches('button[data-action="toggle-concentration"]')) {
+        combatant.isConcentrating = !combatant.isConcentrating; // Toggle boolean
+        renderInitiativeList();
+        saveCombatantsToStorage(); // Save after concentration change
+    }
 }
+
 
 function handleNextTurn() {
     currentTurnIndex++;
@@ -210,6 +283,7 @@ function handleNextTurn() {
         currentTurnIndex = 0;
     }
     renderInitiativeList();
+    saveCombatantsToStorage();
 }
 
 function handlePreviousTurn() {
@@ -218,6 +292,7 @@ function handlePreviousTurn() {
         currentTurnIndex = combatants.length - 1;
     }
     renderInitiativeList();
+    saveCombatantsToStorage();
 }
 
 document.getElementById('start-combat-btn').addEventListener('click', () => {
@@ -227,6 +302,7 @@ document.getElementById('start-combat-btn').addEventListener('click', () => {
     }
     currentTurnIndex = 0;
     renderInitiativeList();
+    saveCombatantsToStorage();
 });
 
 
