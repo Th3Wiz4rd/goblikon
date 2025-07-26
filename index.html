@@ -1,8 +1,81 @@
+<!DOCTYPE html>
+<html lang="en"> ><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        D&D Combat Tracker - Boot.dev Hackathon
+    </title>
+    <link rel="stylesheet" href="style.css">
+</head>
 <body>
 
-    <script src="script.js"></script>
-    <script src="style.css"></script>
+    <header> 
+        <h1>D&D Combat Tracker - Boot.dev Hackathon</h1>
+    </header>
+
+    <section id="creature-setup">
+        <h2>Add Warriors!</h2>
+        <h3>Encounter Builder</h3>
+
+        <form id="add-creature-form"> <div> <label for="creature-name">Name:</label>
+                <input type="text" id="creature-name" placeholder="Goblikon or Elianna" required>
+            </div>
+            
+            <div>
+                <label for="creature-max-hp">Max HP:</label>
+                <input type="number" id="creature-max-hp" value="10" min="1" required>
+            </div>
+            
+            <div>
+                <label for="creature-ac">AC:</label>
+                <input type="number" id="creature-ac" value="10" min="0" required>
+            </div>
+            
+            <div>
+                <label for="creature-initiative">Initiative:</label>
+                <input type="number" id="creature-initiative" placeholder="Roll D20 + Dex Mod" required>
+            </div>
+
+            <div>
+                <label for="creature-type">Type:</label>
+                <select id="creature-type">
+                    <option value="player">Player</option>
+                    <option value="monster">Monster</option>
+                    <option value="npc">NPC</option> </select>
+            </div>
+            
+            <button type="button" id="add-creature-btn">Add Creature</button>
+            
+        </form>
+
+        <div id="pre-combat-list">
+            <h4>Creatures in Encounter:</h4>
+            <p>No creatures added yet.</p>
+        </div>
+
+        <button id="start-combat-btn">Start Combat</button>
+    </section>
+
+    <section id="combat-tracker">
+        <h2>Current Combat Order</h2>
+        <div class="turn-controls">
+            <button id="prev-turn-btn">Previous Turn</button>
+            <span id="current-turn-display"></span> <button id="next-turn-btn">Next Turn</button>
+        </div>
+
+        <div id="initiative-list-container">
+            <p>Combat not Started. Add creatures above.</p>
+        </div>
+    </section>
+
+    <section id="visual-map-section">
+        <h2>Battle Map (optional)</h2>
+        <canvas id="battle-map-canvas" width="800" height="600" style="border:1px solid black;"></canvas>
+    </section>
+    /*might remove*/
 
 
-    
+   <script src="script.js"></script> 
 </body>
+
+</html>
